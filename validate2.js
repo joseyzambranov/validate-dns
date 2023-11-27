@@ -1,10 +1,91 @@
-const dns = require("dns");
-const util = require("util");
+const dns = require('dns');
+const dnsPromises = dns.promises;
 
 const listaDeCorreos2 = [
   "example1@pepetrueno.com",
-  "joseyzambranovpe2@gmail.com",
+  "joseyzambranovpe2@gmail.con",
 ];
+
+//const dnsLookup = util.promisify(dns.resolveMx);
+
+const validateEmails = async () => {
+  const detail = [];
+
+  for (const element of listaDeCorreos2) {
+    const emailValue = element;
+    const item = {
+      valid: true,
+      email: emailValue,
+    };
+    const patternEmail = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+    
+    if (!patternEmail.test(emailValue)) {
+      item.valid = false;
+    }
+    
+    const sections = emailValue.split("@");
+    
+    if (sections.length === 0 || sections[0].length < 5) {
+      item.valid = false;
+    }
+    
+    const sectionName = sections[0];
+    
+    const wordNotAllowed = [
+      "no",
+      "no_tiene",
+      "nocorreo",
+      "no_correo",
+      "nocuenta",
+      "no_cuenta",
+      "noposee",
+      "no_posee",
+      "nohay",
+      "no_hay",
+      "notengo",
+      "no_tengo",
+    ];
+    
+    if (wordNotAllowed.includes(sectionName.toLowerCase())) {
+      item.valid = false;
+    }
+    
+    const dominio = sections[1]; // El dominio es la segunda parte del correo
+    
+     let testValidate =  await test(dominio);
+    if(!testValidate){
+      item.valid = false;
+      item.reason = `Dominio Inválido (${dominio})`;
+    }
+
+    
+    
+    const countLetter = [...sectionName].filter((letter) => letter === sectionName[0]).length;
+    
+    if (countLetter === sectionName.length) {
+      item.valid = false;
+    }
+    
+    detail.push(item);
+  }
+
+  console.log(detail);
+};
+
+
+
+
+async function test(domain){
+    let response = await dnsPromises.lookup(domain).catch(() => { return false } )
+    if(!response){
+        response = await dnsPromises.resolveMx(domain).catch(() => { return false } )
+    }
+
+    return response
+}
+
+validateEmails();
+
 
 const listaDeCorreos = [
   "hernansacieta@hotmail.com",
@@ -5009,71 +5090,3 @@ const listaDeCorreos = [
   "oindustries@hotmail.com",
   "okada.giovanni@gmail.com",
 ];
-
-const dnsLookup = util.promisify(dns.resolveMx);
-
-const validateEmails = async () => {
-  const detail = [];
-
-  for (const element of listaDeCorreos) {
-    const emailValue = element;
-    const item = {
-      source: "archivo",
-      deleted: false,
-      valid: true,
-      email: emailValue,
-    };
-    const patternEmail = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
-    
-    if (!patternEmail.test(emailValue)) {
-      item.valid = false;
-    }
-    
-    const sections = emailValue.split("@");
-    
-    if (sections.length === 0 || sections[0].length < 5) {
-      item.valid = false;
-    }
-    
-    const sectionName = sections[0];
-    
-    const wordNotAllowed = [
-      "no",
-      "no_tiene",
-      "nocorreo",
-      "no_correo",
-      "nocuenta",
-      "no_cuenta",
-      "noposee",
-      "no_posee",
-      "nohay",
-      "no_hay",
-      "notengo",
-      "no_tengo",
-    ];
-    
-    if (wordNotAllowed.includes(sectionName.toLowerCase())) {
-      item.valid = false;
-    }
-    
-    const dominio = sections[1]; // El dominio es la segunda parte del correo
-    try {
-      await dnsLookup(dominio);
-    } catch (err) {
-      item.valid = false;
-      item.reason = `Dominio Inválido (${dominio}): ${err.message}`;
-    }
-    
-    const countLetter = [...sectionName].filter((letter) => letter === sectionName[0]).length;
-    
-    if (countLetter === sectionName.length) {
-      item.valid = false;
-    }
-    
-    detail.push(item);
-  }
-
-  console.log(detail);
-};
-
-validateEmails();
